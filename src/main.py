@@ -2,24 +2,38 @@ from algorithms import *
 
 import pygame as pg
 import random
+import colorsys
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 
-DEFAULT_COLOR = (191, 55, 55)
-HIGHLIGHT_COLOR = (191, 22, 22)
-BACKGROUND_COLOR = (26, 34, 43)
+POINTER_COLOR = (0, 0, 0)
+HIGHLIGHT_COLOR = (32, 99, 155)
+BACKGROUND_COLOR = (23, 63, 95)
 
+# Whether the list is actually random values or shuffled list of all numbers in
+# data range.
+TRUE_RANDOM = False
 DATA_MAX_VALUE = 400
-BAR_WIDTH = 6
+
 # Decreasing bar width will increase the data set size
-BAR_HEIGHT = 1
+BAR_WIDTH = 6
 # This value is scaled by the item value to get the actual height
+BAR_HEIGHT = 1
 
 FPS = 30
 
 # Callbacks for event handler
 _callbacks = {}
+
+
+# Gets color of the bar, from its value
+def get_bar_value(value):
+	adjusted_hue = value / DATA_MAX_VALUE
+	rgb_raw = colorsys.hsv_to_rgb(adjusted_hue, 0.6, 1)
+
+	return  tuple(round(i * 255) for i in rgb_raw)
+
 
 # Renders text in
 def render_text(text):
@@ -82,15 +96,19 @@ class Visualizer:
 		pg.display.set_caption("Sorting Visualizer")
 		
 		self.arr_size = int(SCREEN_WIDTH // (BAR_WIDTH + 1))
-		self.randomize_data()
+		self.generate_data()
 		self.type = ''
 		self.sort_speed = 1
 
 		Event.on('output', self.refresh)
 
 	# Generates new random datasets
-	def randomize_data(self):
-		self.arr = [random.randint(1, DATA_MAX_VALUE) for x in [0] * self.arr_size]
+	def generate_data(self):
+		if TRUE_RANDOM:
+			self.arr = [random.randint(1, DATA_MAX_VALUE) for x in [0] * self.arr_size]
+		else:
+			self.arr = [int(DATA_MAX_VALUE * (x / self.arr_size)) for x in range(1, self.arr_size + 1)]
+			random.shuffle(self.arr)
 
 	# Start the sorting algorithm of choice
 	def start(self):
@@ -135,7 +153,7 @@ class Visualizer:
 		self.screen.blit(speed_text, (SCREEN_WIDTH - speed_text.get_width() - 10, 10))
 
 		for i, item in enumerate(self.arr):
-			color = DEFAULT_COLOR if i is not pointer else HIGHLIGHT_COLOR
+			color = get_bar_value(item) if i is not pointer else POINTER_COLOR
 
 			rect = (i * (BAR_WIDTH + 1), SCREEN_HEIGHT - (BAR_HEIGHT * item), BAR_WIDTH, BAR_HEIGHT * item)
 
@@ -172,7 +190,7 @@ class Visualizer:
 						if button.is_clicked():
 							# Handles the buttons if they are clicked.
 							if button.value is 'randomize':
-								self.randomize_data()
+								self.generate_data()
 							# Sorting can be started by button or space bar
 							elif button.value is 'start':
 								if self.type is not '':
@@ -217,7 +235,7 @@ class Visualizer:
 
 				rect = (i * (BAR_WIDTH + 1), SCREEN_HEIGHT - (BAR_HEIGHT * item), BAR_WIDTH, BAR_HEIGHT * item)
 
-				pg.draw.rect(self.screen, DEFAULT_COLOR, rect)
+				pg.draw.rect(self.screen, get_bar_value(item), rect)
 
 			pg.display.update()
 
